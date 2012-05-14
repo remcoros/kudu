@@ -17,10 +17,11 @@ namespace Kudu.Core.SourceControl.Git
         private readonly ITraceFactory _traceFactory;
         private readonly GitExeRepository _repository;
         private readonly IOperationLock _initLock;
+        private readonly string _tempPath;
 
         private static readonly TimeSpan _initTimeout = TimeSpan.FromMinutes(8);
 
-        public GitExeServer(string path, IOperationLock initLock, IDeploymentEnvironment deploymentEnvironment, ITraceFactory traceFactory)
+        public GitExeServer(string path, string tempPath, IOperationLock initLock, IDeploymentEnvironment deploymentEnvironment, ITraceFactory traceFactory)
         {
             _gitExe = new GitExecutable(path);
             _gitExe.SetTraceLevel(2);
@@ -28,6 +29,7 @@ namespace Kudu.Core.SourceControl.Git
             _repository = new GitExeRepository(path, traceFactory);
             _repository.SetTraceLevel(2);
             _initLock = initLock;
+            _tempPath = tempPath;
 
             // Setup the deployment environment variable to be used by the post receive hook
             _gitExe.EnvironmentVariables[KnownEnviornment.EXEPATH] = deploymentEnvironment.ExePath;
@@ -140,14 +142,43 @@ namespace Kudu.Core.SourceControl.Git
                         { "path", path }
                     });
 
-                    using (tracer.Step("Copying files into repository"))
+                    // Final repository path
+                    string repositoryPath = _gitExe.WorkingDirectory;
+
+                    // Prepare a temp path for the repository for the initial operation
+                    string cloneTempPath = Path.Combine(_tempPath, Guid.NewGuid().ToString());
+
+                    var parameters = new Dictionary<string, string>
                     {
-                        // Copy all of the files into the repository
-                        FileSystemHelpers.Copy(path, _gitExe.WorkingDirectory);
+                        { "path", cloneTempPath }
+                    };
+
+                    using (tracer.Step("Copying empty repository to temp path", parameters))
+                    {
+                        // Copy the empty repository there (including the .git folder)
+                        FileSystemHelpers.Copy(repositoryPath, cloneTempPath, skipScmFolder: false);
                     }
 
+                    using (tracer.Step("Copying files into temporary repository"))
+                    {
+                        // Copy all of the files into the repository
+                        FileSystemHelpers.Copy(path, cloneTempPath);
+                    }
+
+                    // Create a repository using the temp path
+                    var repository = new GitExeRepository(cloneTempPath, _traceFactory);
+
                     // Make the initial commit
-                    changeSet = _repository.Commit("Initial commit");
+                    changeSet = repository.Commit("Initial commit");
+
+                    using (tracer.Step("Copying files back into original repository"))
+                    {
+                        // Now copy everything back here
+                        FileSystemHelpers.Copy(cloneTempPath, repositoryPath, skipScmFolder: false);
+                    }
+
+                    // TODO: Figure out clean up policy, if number of files is too large we'd want to do this
+                    // in an offline manner
                 }
             },
             _initTimeout);
