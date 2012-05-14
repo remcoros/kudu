@@ -173,8 +173,11 @@ namespace Kudu.Core.SourceControl.Git
 
                     using (tracer.Step("Copying files back into original repository"))
                     {
-                        // Now copy everything back here
-                        FileSystemHelpers.Copy(cloneTempPath, repositoryPath, skipScmFolder: false);
+                        string tempGitFolder = Path.Combine(cloneTempPath, ".git");
+                        string targetGitFolder = Path.Combine(repositoryPath, ".git");
+
+                        // Now copy the git folder
+                        FileSystemHelpers.Copy(tempGitFolder, targetGitFolder, skipScmFolder: false);
                     }
 
                     // Clean up the temp folder
