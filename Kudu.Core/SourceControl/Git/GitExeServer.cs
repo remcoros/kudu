@@ -177,8 +177,11 @@ namespace Kudu.Core.SourceControl.Git
                         FileSystemHelpers.Copy(cloneTempPath, repositoryPath, skipScmFolder: false);
                     }
 
-                    // TODO: Figure out clean up policy, if number of files is too large we'd want to do this
-                    // in an offline manner
+                    // Clean up the temp folder
+                    using (tracer.Step("Cleaning up temporary repository"))
+                    {
+                        FileSystemHelpers.DeleteDirectorySafe(cloneTempPath);
+                    }
                 }
             },
             _initTimeout);
