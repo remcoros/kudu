@@ -55,6 +55,16 @@ namespace Kudu.Core.SourceControl.Git
             _repository.Clean();
         }
 
+        public void Update()
+        {
+            _repository.Update();
+        }
+
+        public void Commit(string message, string authorName)
+        {
+            _repository.Commit(message, authorName);
+        }
+
         public void SetSSHEnv(string host, string homePath)
         {
             _repository.SetSSHEnv(host, homePath);

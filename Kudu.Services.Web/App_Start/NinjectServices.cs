@@ -254,6 +254,9 @@ namespace Kudu.Services.Web.App_Start
 
             // LogStream
             routes.MapHandler<LogStreamHandler>(kernel, "logstream", "logstream/{*path}");
+
+            // LogStream
+            routes.MapHandler<DropboxHandler>(kernel, "dropbox", "dropbox/{*path}");
         }
 
         private static IProjectSystem GetEditorProjectSystem(IEnvironment environment, IContext context)
