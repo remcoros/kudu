@@ -3,18 +3,8 @@
 :: ----------------------
 :: KUDU Deployment Script
 :: ----------------------
-::
-:: INPUTS:
-:: -------
-:: REPOSITORY_ROOT_PATH
-:: TEMPORARY_DIRECTORY_PATH
-:: WEB_ROOT_PATH
-:: MANIFEST_PATH
 
 :: Setup
-set PROJECT_PATH={ProjectPath}
-set SOLUTION_PATH={SolutionPath}
-set MSBUILD_PATH={MSBuildPath}
 set SMART_COPY_COMMAND=node smartCopy.js
 SET ARTIFACTS=%~dp0%artifacts
 

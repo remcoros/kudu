@@ -3,57 +3,36 @@
 :: ----------------------
 :: KUDU Deployment Script
 :: ----------------------
-::
-:: INPUTS:
-:: -------
-:: REPOSITORY_ROOT_PATH
-:: TEMPORARY_DIRECTORY_PATH
-:: WEB_ROOT_PATH
-:: MANIFEST_PATH
-:: PROJECT_TYPE
-:: PROJECT_FILE_PATH
-:: SOLUTION_FILE_PATH
 
-:: Switch on the project type
-IF /I  "%PROJECT_TYPE%"=="DOTNET_WEB_APPLICATION" goto wap
-IF /I  "%PROJECT_TYPE%"=="DOTNET_WEB_SITE" goto website
-IF /I  "%PROJECT_TYPE%"=="OTHER" goto other
-goto error
+:: Setup
+set SMART_COPY_COMMAND=node smartCopy.js
+SET ARTIFACTS=%~dp0%artifacts
 
-:wap
-echo Handling .NET Web Application deployment.
+IF NOT DEFINED REPOSITORY_ROOT_PATH (
+  SET REPOSITORY_ROOT_PATH=%~dp0%
+)
 
-:: Build to the temporary path
-%MSBUILD_TO_TEMP_COMMAND%
-IF %ERRORLEVEL% NEQ 0 goto error
+IF NOT DEFINED WEB_ROOT_PATH (
+  SET WEB_ROOT_PATH=%ARTIFACTS%\wwwroot
+)
 
-:: SmartCopy [From] [To] [Manifest]
-%SMART_COPY_COMMAND% %TEMPORARY_DIRECTORY_PATH% %WEB_ROOT_PATH% %MANIFEST_PATH%
-IF %ERRORLEVEL% NEQ 0 goto error
+IF NOT DEFINED MANIFEST_PATH (
+  SET MANIFEST_PATH=%ARTIFACTS%\manifest
+)
 
-goto end
+IF NOT DEFINED MSBUILD_PATH (
+  SET MSBUILD_PATH={MSBuildPath}
+)
 
-:website
+:: Deployment
 echo Handling .NET Web Site deployment.
 
-:: Build to the repository root path
-%MSBUILD_TO_REPOSITORY_COMMAND%
+:: 1. Build to the repository path
+echo %MSBUILD_PATH%\msbuild {MSBuildArguments}
 IF %ERRORLEVEL% NEQ 0 goto error
 
-:: SmartCopy [From] [To] [Manifest]
-%SMART_COPY_COMMAND% %REPOSITORY_ROOT_PATH% %WEB_ROOT_PATH% %MANIFEST_PATH%
-IF %ERRORLEVEL% NEQ 0 goto error
-
-goto end
-
-:other
-echo Handling web site deployment.
-
-:: SmartCopy [From] [To] [Manifest]
-%SMART_COPY_COMMAND% %REPOSITORY_ROOT_PATH% %WEB_ROOT_PATH% %MANIFEST_PATH%
-IF %ERRORLEVEL% NEQ 0 goto error
-
-%DOWNLOAD_NPM_PACKAGES_COMMAND%
+:: 2. SmartCopy [From] [To] [Manifest]
+echo %SMART_COPY_COMMAND% %REPOSITORY_ROOT_PATH% %WEB_ROOT_PATH% %MANIFEST_PATH%
 IF %ERRORLEVEL% NEQ 0 goto error
 
 goto end
