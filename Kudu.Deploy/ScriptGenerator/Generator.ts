@@ -21,7 +21,7 @@ function generateWapDeploymentScript(repositoryRoot: string, projectPath: string
     var relativeProjectPath = pathUtil.relative(repositoryRoot, projectPath);
     var relativeSolutionPath = pathUtil.relative(repositoryRoot, solutionPath);
 
-    var msbuildArguments = "\"%DEPLOYMENT_SOURCE%\\" + relativeProjectPath + "\" /nologo /verbosity:m /t:pipelinePreDeployCopyAllFilesToOneFolder /p:_PackageTempDir=\"%TEMPORARY_PATH%\";AutoParameterizationWebConfigConnectionStrings=false;Configuration=Release";
+    var msbuildArguments = "\"%DEPLOYMENT_SOURCE%\\" + relativeProjectPath + "\" /nologo /verbosity:m /t:pipelinePreDeployCopyAllFilesToOneFolder /p:_PackageTempDir=\"%DEPLOYMENT_TEMP%\";AutoParameterizationWebConfigConnectionStrings=false;Configuration=Release";
     if (solutionPath != null) {
         msbuildArguments += " /p:SolutionDir=\"%DEPLOYMENT_SOURCE%\\" + relativeSolutionPath + "\"";
     }
