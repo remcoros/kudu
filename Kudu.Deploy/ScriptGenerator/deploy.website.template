@@ -1,28 +1,3 @@
-@echo off
-
-:: ----------------------
-:: KUDU Deployment Script
-:: ----------------------
-
-:: Setup
-set SMART_COPY_COMMAND=node smartCopy.js
-SET ARTIFACTS=%~dp0%artifacts
-
-IF NOT DEFINED REPOSITORY_ROOT_PATH (
-  SET REPOSITORY_ROOT_PATH=%~dp0%
-)
-
-IF NOT DEFINED WEB_ROOT_PATH (
-  SET WEB_ROOT_PATH=%ARTIFACTS%\wwwroot
-)
-
-IF NOT DEFINED MANIFEST_PATH (
-  SET MANIFEST_PATH=%ARTIFACTS%\manifest
-)
-
-IF NOT DEFINED MSBUILD_PATH (
-  SET MSBUILD_PATH={MSBuildPath}
-)
 
 :: Deployment
 echo Handling .NET Web Site deployment.
@@ -32,14 +7,5 @@ echo %MSBUILD_PATH%\msbuild {MSBuildArguments}
 IF %ERRORLEVEL% NEQ 0 goto error
 
 :: 2. SmartCopy [From] [To] [Manifest]
-echo %SMART_COPY_COMMAND% %REPOSITORY_ROOT_PATH% %WEB_ROOT_PATH% %MANIFEST_PATH%
+echo %SMART_COPY_COMMAND% %DEPLOYMENT_SOURCE% %DEPLOYMENT_TARGET% %MANIFEST_PATH%
 IF %ERRORLEVEL% NEQ 0 goto error
-
-goto end
-
-:error
-echo An error has occured during web site deployment.
-exit /b 1
-
-:end
-echo Finished successfully.

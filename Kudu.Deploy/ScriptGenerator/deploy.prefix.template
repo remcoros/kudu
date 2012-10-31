@@ -1,0 +1,29 @@
+@echo off
+
+:: ----------------------
+:: KUDU Deployment Script
+:: ----------------------
+
+:: Setup
+set SMART_COPY_COMMAND=node smartCopy.js
+SET ARTIFACTS=%~dp0%artifacts
+
+IF NOT DEFINED TEMPORARY_PATH (
+  SET TEMPORARY_PATH=%temp%\deployTemp
+)
+
+IF NOT DEFINED DEPLOYMENT_SOURCE (
+  SET DEPLOYMENT_SOURCE=%~dp0%
+)
+
+IF NOT DEFINED DEPLOYMENT_TARGET (
+  SET DEPLOYMENT_TARGET=%ARTIFACTS%\wwwroot
+)
+
+IF NOT DEFINED MANIFEST_PATH (
+  SET MANIFEST_PATH=%ARTIFACTS%\manifest
+)
+
+IF NOT DEFINED MSBUILD_PATH (
+  SET MSBUILD_PATH={MSBuildPath}
+)

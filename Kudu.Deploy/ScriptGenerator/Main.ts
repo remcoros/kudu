@@ -3,6 +3,12 @@
 var yanop = require("yanop");
 
 var opts = yanop.simple({
+    repositoryRoot: {
+        type: yanop.scalar,
+        short: 'r',
+        description: 'Root path for the repository',
+        required: true
+    },
     projectType: {
         type: yanop.scalar,
         short: 't',
@@ -22,7 +28,7 @@ var opts = yanop.simple({
 }, "Custom deployment script generator");
 
 try {
-    generateDeploymentScript(opts.projectType, opts.projectFile, opts.solutionFile);
+    generateDeploymentScript(opts.repositoryRoot, opts.projectType, opts.projectFile, opts.solutionFile);
 }
 catch (e) {
     console.log("Error: " + e.message);

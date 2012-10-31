@@ -1,37 +1,42 @@
 ///<reference path='ensure.ts'/>
 
-function generateDeploymentScript(projectType: string, projectPath: string, solutionPath: string) {
+function generateDeploymentScript(repositoryRoot: string, projectType: string, projectPath: string, solutionPath: string) {
     Ensure.argNotNull(projectType, "projectType");
 
     projectType = projectType.toUpperCase();
     if (projectType == "WAP") {
-        generateWapDeploymentScript(projectPath, solutionPath);
+        generateWapDeploymentScript(repositoryRoot, projectPath, solutionPath);
     }
     else if (projectType == "WEBSITE") {
-        generateWebSiteDeploymentScript(solutionPath);
+        generateWebSiteDeploymentScript(repositoryRoot, solutionPath);
     }
     else {
         throw new Error("Invalid project type received: " + projectType);
     }
 }
 
-function generateWapDeploymentScript(projectPath: string, solutionPath: string) {
+function generateWapDeploymentScript(repositoryRoot: string, projectPath: string, solutionPath: string) {
     Ensure.argNotNull(projectPath, "projectPath");
 
-    var msbuildArguments = "\"" + projectPath + "\" /nologo /verbosity:m /t:pipelinePreDeployCopyAllFilesToOneFolder /p:_PackageTempDir=\"%TEMPORARY_PATH%\";AutoParameterizationWebConfigConnectionStrings=false;Configuration=Release /p:SolutionDir=\"%SOLUTION_PATH%\"";
+    var relativeProjectPath = pathUtil.relative(repositoryRoot, projectPath);
+    var relativeSolutionPath = pathUtil.relative(repositoryRoot, solutionPath);
+
+    var msbuildArguments = "\"%DEPLOYMENT_SOURCE%\\" + relativeProjectPath + "\" /nologo /verbosity:m /t:pipelinePreDeployCopyAllFilesToOneFolder /p:_PackageTempDir=\"%TEMPORARY_PATH%\";AutoParameterizationWebConfigConnectionStrings=false;Configuration=Release";
     if (solutionPath != null) {
-        msbuildArguments += " /p:SolutionDir=\"" + solutionPath + "\"";
+        msbuildArguments += " /p:SolutionDir=\"%DEPLOYMENT_SOURCE%\\" + relativeSolutionPath + "\"";
     }
 
     generateDotNetDeploymentScript("deploy.wap.template", msbuildArguments);
 }
 
-function generateWebSiteDeploymentScript(solutionPath: string) {
+function generateWebSiteDeploymentScript(repositoryRoot: string, solutionPath: string) {
     if (solutionPath == null) {
         throw new Error("The solution file path is required for .NET web site deployment script");
     }
 
-    var msbuildArguments = "\"%SOLUTION_PATH%\" /verbosity:m /nologo";
+    var relativeSolutionPath = pathUtil.relative(repositoryRoot, solutionPath);
+
+    var msbuildArguments = "\"%DEPLOYMENT_SOURCE%\\" + relativeSolutionPath + "\" /verbosity:m /nologo";
     generateDotNetDeploymentScript("deploy.website.template", msbuildArguments);
 }
 
@@ -39,13 +44,16 @@ function generateDotNetDeploymentScript(templatePath: string, msbuildArguments: 
     Ensure.argNotNull(templatePath, "templatePath");
 
     var winDir = process.env["WINDIR"];
-    var msbuildPath = winDir + "\Microsoft.NET\Framework\v4.0.30319";
+    var msbuildPath = winDir + "\\Microsoft.NET\\Framework\\v4.0.30319";
     /*if (!fs.existsSync(msbuildPath)) {
-        msbuildPath = winDir + "\Microsoft.NET\Framework64\v4.0.30319";
+        msbuildPath = winDir + "\\Microsoft.NET\\Framework64\\v4.0.30319";
     }*/
 
-    var templateContent = fs.readFileSync(templatePath, "utf8");
+    var prefixContent: string = fs.readFileSync("deploy.prefix.template", "utf8");
+    var specificTemplateContent = fs.readFileSync(templatePath, "utf8");
+    var postfixContent = fs.readFileSync("deploy.postfix.template", "utf8");
 
+    var templateContent = prefixContent + specificTemplateContent + postfixContent;
     templateContent =
         templateContent.replace("{MSBuildArguments}", msbuildArguments)
                        .replace("{MSBuildPath}", msbuildPath);
