@@ -55,6 +55,8 @@
     </Compile>
     <Compile Include="Commands\CommandExecutor.cs" />
     <Compile Include="Deployment\CascadeLogger.cs" />
+    <Compile Include="Deployment\ProjectType.cs" />
+    <Compile Include="Deployment\ExternalCommandBuilder.cs" />
     <Compile Include="Deployment\CustomBuilder.cs" />
     <Compile Include="Deployment\DeploymentConfiguration.cs" />
     <Compile Include="Deployment\DeploymentContext.cs" />
@@ -63,7 +65,7 @@
     <Compile Include="Deployment\IDeploymentManifestReader.cs" />
     <Compile Include="Deployment\IDeploymentManifestWriter.cs" />
     <Compile Include="Deployment\ManifestWriterExtensions.cs" />
-    <Compile Include="Deployment\MsBuildSiteBuilder.cs" />
+    <Compile Include="Deployment\GeneratorSiteBuilder.cs" />
     <Compile Include="Deployment\NodeSiteEnabler.cs" />
     <Compile Include="Deployment\NpmExecutable.cs" />
     <Compile Include="Deployment\NullLogger.cs" />

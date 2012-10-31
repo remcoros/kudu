@@ -1,7 +1,7 @@
-﻿using System;
+﻿using Kudu.Contracts.Tracing;
+using System;
 using System.IO;
 using System.Threading.Tasks;
-using Kudu.Contracts.Tracing;
 
 namespace Kudu.Core.Deployment
 {

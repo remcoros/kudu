@@ -1,139 +1,35 @@
-﻿using System;
-using System.Globalization;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
-using Kudu.Contracts.Tracing;
+﻿using Kudu.Contracts.Tracing;
 using Kudu.Core.Infrastructure;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading.Tasks;
 
 namespace Kudu.Core.Deployment
 {
-    public class WapBuilder : MsBuildSiteBuilder
+    public class WapBuilder : GeneratorSiteBuilder
     {
         private readonly string _projectPath;
-        private readonly string _tempPath;
         private readonly string _solutionPath;
 
-        public WapBuilder(IBuildPropertyProvider propertyProvider, string sourcePath, string projectPath, string tempPath, string nugetCachePath, string solutionPath)
-            : base(propertyProvider, sourcePath, tempPath, nugetCachePath)
+        public WapBuilder(IEnvironment environment, IBuildPropertyProvider propertyProvider, string sourcePath, string projectPath, string solutionPath)
+            : base(environment, propertyProvider, sourcePath)
         {
             _projectPath = projectPath;
-            _tempPath = tempPath;
             _solutionPath = solutionPath;
         }
 
-        public override Task Build(DeploymentContext context)
+        protected override string ScriptGeneratorCommandArguments
         {
-            var tcs = new TaskCompletionSource<object>();
-            string buildTempPath = Path.Combine(_tempPath, Guid.NewGuid().ToString());
-
-            ILogger buildLogger = context.Logger.Log(Resources.Log_BuildingWebProject, Path.GetFileName(_projectPath));
-
-            try
+            get
             {
-                using (context.Tracer.Step("Running msbuild on project file"))
+                string arguments = "scriptGenerator.js --repositoryRoot=\"{0}\" --projectType=\"{1}\" --projectFile=\"{2}\"";
+                List<string> args = new List<string>() { RepositoryPath, ProjectType.Wap.ToString(), _projectPath };
+
+                if (!string.IsNullOrWhiteSpace(_solutionPath))
                 {
-                    string log = BuildProject(context.Tracer, buildTempPath);
-
-                    // Log the details of the build
-                    buildLogger.Log(log);
-                }
-            }
-            catch (Exception ex)
-            {
-                context.Tracer.TraceError(ex);
-
-                // HACK: Log an empty error to the global logger (post receive hook console output).
-                // The reason we don't log the real exception is because the 'live output' running
-                // msbuild has already been captured.
-                context.GlobalLogger.LogError();
-
-                buildLogger.Log(ex);
-
-                tcs.SetException(ex);
-
-                return tcs.Task;
-            }
-
-            ILogger copyLogger = context.Logger.Log(Resources.Log_PreparingFiles);
-
-            try
-            {
-                using (context.Tracer.Step("Copying files to output directory"))
-                {
-                    // Copy to the output path and use the previous manifest if there
-                    DeploymentHelper.CopyWithManifest(buildTempPath, context.OutputPath, context.PreviousMainfest);
-                }
-
-                using (context.Tracer.Step("Building manifest"))
-                {
-                    // Generate a manifest from those build artifacts
-                    context.ManifestWriter.AddFiles(buildTempPath);
-                }
-
-                // Log the copied files from the manifest
-                copyLogger.LogFileList(context.ManifestWriter.GetPaths());
-
-                tcs.SetResult(null);
-            }
-            catch (Exception ex)
-            {
-                context.Tracer.TraceError(ex);
-
-                context.GlobalLogger.Log(ex);
-
-                copyLogger.Log(ex);
-
-                tcs.SetException(ex);
-            }
-            finally
-            {
-                // Clean up the build artifacts after copying them
-                CleanBuild(context.Tracer, buildTempPath);
-            }
-
-            return tcs.Task;
-        }
-
-        internal string BuildProject(ITracer tracer, string buildTempPath)
-        {
-            string command = GetMSBuildArguments(buildTempPath);
-
-
-            // Build artifacts into a temp path
-            return ExecuteMSBuild(tracer, command);
-        }
-
-        internal string GetMSBuildArguments(string buildTempPath)
-        {
-            string command = @"""{0}"" /nologo /verbosity:m /t:pipelinePreDeployCopyAllFilesToOneFolder /p:_PackageTempDir=""{1}"";AutoParameterizationWebConfigConnectionStrings=false;Configuration=Release";
-            string properties = GetPropertyString();
-            if (!String.IsNullOrEmpty(properties))
-            {
-                command += " /p:" + properties;
-            }
-
-            string solutionDir = null;
-            if (!String.IsNullOrEmpty(_solutionPath))
-            {
-                solutionDir = Path.GetDirectoryName(_solutionPath) + @"\\";
-                command += @" /p:SolutionDir=""{2}""";
-            }
-            command = String.Format(CultureInfo.InvariantCulture, command, _projectPath, buildTempPath, solutionDir);
-            return command;
-        }
-
-        private void CleanBuild(ITracer tracer, string buildTempPath)
-        {
-            using (tracer.Step("Cleaning up temp files"))
-            {
-                try
-                {
-                    FileSystemHelpers.DeleteDirectorySafe(buildTempPath);
-                }
-                catch (Exception ex)
-                {
-                    tracer.TraceError(ex);
+                    arguments += " --solutionFile=\"{3}\"";
+                    args.Add(_solutionPath);
                 }
             }
         }

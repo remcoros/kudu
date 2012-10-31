@@ -4,8 +4,10 @@ namespace Kudu.Core.Deployment
 {
     public class DeploymentContext
     {
-        public IDeploymentManifestReader PreviousMainfest { get; set; }
-        public IDeploymentManifestWriter ManifestWriter { get; set; }
+        /// <summary>
+        /// Path to the manifest file.
+        /// </summary>
+        public string ManifestPath { get; set; }
 
         /// <summary>
         /// Writes diagnostic output to the trace.
