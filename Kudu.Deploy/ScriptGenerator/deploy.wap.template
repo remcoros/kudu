@@ -2,10 +2,14 @@
 :: Deployment
 echo Handling .NET Web Application deployment.
 
+:: 0. Install smart copy
+echo Installing smart copy
+npm install https://github.com/projectkudu/SmartCopy/tarball/master -g
+
 :: 1. Build to the temporary path
 echo %MSBUILD_PATH%\msbuild {MSBuildArguments}
 IF %ERRORLEVEL% NEQ 0 goto error
 
 :: 2. SmartCopy [From] [To] [Manifest]
-echo %SMART_COPY_COMMAND% %DEPLOYMENT_TEMP% %DEPLOYMENT_TARGET% %MANIFEST_PATH%
+echo %SMART_COPY_COMMAND% %DEPLOYMENT_TEMP% %DEPLOYMENT_TARGET% %PREVIOUS_MANIFEST_PATH% %CURRENT_MANIFEST_PATH%
 IF %ERRORLEVEL% NEQ 0 goto error
